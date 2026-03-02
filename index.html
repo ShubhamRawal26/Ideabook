@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idea Diary</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background: #f8f9fa; min-height: 100vh; }
+
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.3s ease-out; }
+
+        .idea-card {
+            animation: slideUp 0.4s ease-out both;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .idea-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.95) translateY(20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes scaleIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .modal-overlay { animation: fadeIn 0.2s ease-out; }
+        .modal-content { animation: popIn 0.3s ease-out; }
+
+        .fab-btn {
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .fab-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 28px rgba(79, 70, 229, 0.55);
+        }
+        .fab-btn:active { transform: scale(0.95); }
+
+        .search-input:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12); }
+        .empty-state { animation: fadeIn 0.6s ease-out; }
+
+        .idea-card .delete-btn { opacity: 0; transition: opacity 0.2s; }
+        .idea-card:hover .delete-btn { opacity: 1; }
+        @media (max-width: 640px) { .idea-card .delete-btn { opacity: 0.6; } }
+
+        .color-dot { transition: transform 0.15s, box-shadow 0.15s; }
+        .color-dot:hover { transform: scale(1.15); }
+        .color-dot.active { transform: scale(1.15); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3); }
+
+        .cat-chip { transition: all 0.15s; }
+        .cat-chip.active { background-color: #4f46e5 !important; color: white !important; border-color: #4f46e5 !important; }
+
+        .banner-quotes { animation: fadeIn 1s ease-out; }
+        .stat-card { transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+
+        .cat-grid-card { animation: scaleIn 0.4s ease-out both; transition: transform 0.2s, box-shadow 0.2s; }
+        .cat-grid-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,0.08); }
+
+        .setting-item { transition: background 0.15s; }
+        .setting-item:active { background: #f3f4f6; }
+
+        .toggle-switch { transition: background 0.3s; }
+        .toggle-switch .toggle-dot { transition: transform 0.3s; }
+        .toggle-switch.active { background: #4f46e5; }
+        .toggle-switch.active .toggle-dot { transform: translateX(18px); }
+
+        .footer-tab { transition: all 0.15s; }
+        .footer-tab.active-tab i, .footer-tab.active-tab span { color: #4f46e5; }
+
+        .profile-avatar { 
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 5px; }
+
+        .toast {
+            animation: slideUp 0.3s ease-out, fadeOut 0.3s ease-in 2.2s forwards;
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center">
+                    <i class="fa-solid fa-lightbulb text-white text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-gray-900 leading-tight" id="headerTitle">Idea Diary</h1>
+                    <p class="text-[0.6rem] text-gray-400 leading-tight" id="headerSub">0 ideas saved</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2" id="headerActions">
+                <button onclick="toggleSearch()" class="w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-500" id="btnSearch">
+                    <i class="fa-solid fa-magnifying-glass text-sm"></i>
+                </button>
+                <button onclick="toggleSort()" class="w-9 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition text-gray-500" id="btnSort">
+                    <i class="fa-solid fa-arrow-down-short-wide text-sm"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Search Bar -->
+        <div id="searchBar" class="hidden border-t border-gray-100">
+            <div class="max-w-3xl mx-auto px-4 py-2.5">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input type="text" id="searchInput" placeholder="Search ideas by title, notes or category..."
+                        class="search-input w-full bg-gray-50 text-gray-800 placeholder-gray-400 rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none border border-gray-200 focus:border-indigo-400 transition"
+                        oninput="renderIdeas()">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- =================== HOME PAGE =================== -->
+    <div id="pageHome" class="page active">
+        <!-- Banner -->
+        <div class="bg-white border-b border-gray-100">
+            <div class="max-w-3xl mx-auto px-4 py-8 text-center banner-quotes">
+                <div class="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-solid fa-wand-magic-sparkles text-indigo-600 text-2xl"></i>
+                </div>
+                <h2 class="text-2xl font-extrabold text-gray-900 mb-2" id="bannerTitle">Capture Your Ideas</h2>
+                <p class="text-sm text-gray-500 max-w-sm mx-auto leading-relaxed" id="bannerQuote">Every great achievement started as a simple idea. Save yours before they slip away.</p>
+                <div class="flex justify-center gap-4 mt-6">
+                    <div class="stat-card bg-gray-50 rounded-xl px-5 py-3 text-center border border-gray-100">
+                        <p class="text-xl font-bold text-indigo-600" id="statTotal">0</p>
+                        <p class="text-[0.65rem] text-gray-400 font-medium">Total Ideas</p>
+                    </div>
+                    <div class="stat-card bg-gray-50 rounded-xl px-5 py-3 text-center border border-gray-100">
+                        <p class="text-xl font-bold text-emerald-600" id="statThisWeek">0</p>
+                        <p class="text-[0.65rem] text-gray-400 font-medium">This Week</p>
+                    </div>
+                    <div class="stat-card bg-gray-50 rounded-xl px-5 py-3 text-center border border-gray-100">
+                        <p class="text-xl font-bold text-amber-600" id="statCategories">0</p>
+                        <p class="text-[0.65rem] text-gray-400 font-medium">Categories</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section Title -->
+        <div class="max-w-3xl mx-auto px-4 pt-5 pb-2 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-gray-700"><i class="fa-solid fa-list-ul mr-1.5 text-indigo-500"></i>Your Ideas</h3>
+            <span class="text-xs text-gray-400" id="filterLabel">All</span>
+        </div>
+
+        <!-- Ideas List -->
+        <div class="max-w-3xl mx-auto px-4 pb-32" id="ideasContainer"></div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="empty-state hidden max-w-3xl mx-auto px-4 flex flex-col items-center justify-center py-16">
+            <div class="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-5">
+                <i class="fa-regular fa-lightbulb text-gray-300 text-3xl"></i>
+            </div>
+            <h2 class="text-lg font-semibold text-gray-400 mb-1" id="emptyTitle">No ideas yet</h2>
+            <p class="text-sm text-gray-400 text-center max-w-xs" id="emptyDesc">Tap the + button to capture your first brilliant idea!</p>
+        </div>
+    </div>
+
+    <!-- =================== CATEGORIES PAGE =================== -->
+    <div id="pageCategories" class="page">
+        <div class="max-w-3xl mx-auto px-4 py-6 pb-32">
+            <!-- Category Summary Banner -->
+            <div class="bg-white rounded-2xl p-5 mb-6 border border-gray-100 shadow-sm">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-11 h-11 rounded-xl bg-indigo-50 flex items-center justify-center">
+                        <i class="fa-solid fa-layer-group text-indigo-600 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-900">All Categories</h3>
+                        <p class="text-xs text-gray-400">Organize your ideas by topic</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 text-xs text-gray-500 bg-gray-50 rounded-lg p-3">
+                    <span><i class="fa-solid fa-folder mr-1 text-indigo-400"></i><strong id="catTotalCats">0</strong> categories used</span>
+                    <span><i class="fa-solid fa-lightbulb mr-1 text-amber-400"></i><strong id="catTotalIdeas">0</strong> total ideas</span>
+                </div>
+            </div>
+
+            <!-- Categories Grid -->
+            <div class="grid grid-cols-2 gap-3" id="categoriesGrid"></div>
+        </div>
+    </div>
+
+    <!-- =================== PROFILE PAGE =================== -->
+    <div id="pageProfile" class="page">
+        <div class="max-w-3xl mx-auto px-4 py-6 pb-32">
+            <!-- Profile Card -->
+            <div class="bg-white rounded-2xl p-6 mb-4 border border-gray-100 shadow-sm text-center">
+                <div class="profile-avatar w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 cursor-pointer" onclick="changeAvatar()">
+                    <i class="fa-solid fa-user text-white text-2xl" id="profileAvatarIcon"></i>
+                </div>
+                <h2 class="text-xl font-bold text-gray-900" id="profileNameDisplay">Idea Creator</h2>
+                <p class="text-sm text-gray-400 mt-0.5" id="profileBioDisplay">Capturing ideas, one thought at a time</p>
+                <button onclick="openEditProfile()" class="mt-4 px-5 py-2 rounded-lg bg-indigo-50 text-indigo-600 text-xs font-semibold hover:bg-indigo-100 transition">
+                    <i class="fa-solid fa-pen mr-1.5"></i>Edit Profile
+                </button>
+            </div>
+
+            <!-- Activity Stats -->
+            <div class="bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm">
+                <h3 class="text-sm font-bold text-gray-800 mb-4"><i class="fa-solid fa-chart-bar text-indigo-500 mr-2"></i>Activity Overview</h3>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-indigo-50 rounded-xl p-4 text-center">
+                        <p class="text-2xl font-bold text-indigo-600" id="profStatTotal">0</p>
+                        <p class="text-[0.65rem] text-indigo-400 font-medium">Total Ideas</p>
+                    </div>
+                    <div class="bg-emerald-50 rounded-xl p-4 text-center">
+                        <p class="text-2xl font-bold text-emerald-600" id="profStatWeek">0</p>
+                        <p class="text-[0.65rem] text-emerald-400 font-medium">This Week</p>
+                    </div>
+                    <div class="bg-amber-50 rounded-xl p-4 text-center">
+                        <p class="text-2xl font-bold text-amber-600" id="profStatCats">0</p>
+                        <p class="text-[0.65rem] text-amber-400 font-medium">Categories</p>
+                    </div>
+                    <div class="bg-purple-50 rounded-xl p-4 text-center">
+                        <p class="text-2xl font-bold text-purple-600" id="profStatMonth">0</p>
+                        <p class="text-[0.65rem] text-purple-400 font-medium">This Month</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Categories -->
+            <div class="bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm">
+                <h3 class="text-sm font-bold text-gray-800 mb-4"><i class="fa-solid fa-trophy text-amber-500 mr-2"></i>Top Categories</h3>
+                <div id="topCategoriesList"></div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm">
+                <h3 class="text-sm font-bold text-gray-800 mb-4"><i class="fa-solid fa-clock-rotate-left text-indigo-500 mr-2"></i>Recent Activity</h3>
+                <div id="recentActivity"></div>
+            </div>
+
+            <!-- Member Since -->
+            <div class="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+                <h3 class="text-sm font-bold text-gray-800 mb-3"><i class="fa-solid fa-calendar-check text-emerald-500 mr-2"></i>Account Info</h3>
+                <div class="flex items-center justify-between py-2.5 border-b border-gray-50">
+                    <span class="text-xs text-gray-500">Member since</span>
+                    <span class="text-xs font-semibold text-gray-700" id="profMemberSince">-</span>
+                </div>
+                <div class="flex items-center justify-between py-2.5 border-b border-gray-50">
+                    <span class="text-xs text-gray-500">Avg. ideas per week</span>
+                    <span class="text-xs font-semibold text-gray-700" id="profAvgWeek">0</span>
+                </div>
+                <div class="flex items-center justify-between py-2.5">
+                    <span class="text-xs text-gray-500">Most productive day</span>
+                    <span class="text-xs font-semibold text-gray-700" id="profBestDay">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== SETTINGS PAGE =================== -->
+    <div id="pageSettings" class="page">
+        <div class="max-w-3xl mx-auto px-4 py-6 pb-32">
+            <!-- Settings Header -->
+            <div class="bg-white rounded-2xl p-5 mb-4 border border-gray-100 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-xl bg-gray-100 flex items-center justify-center">
+                        <i class="fa-solid fa-gear text-gray-600 text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-900">Settings</h3>
+                        <p class="text-xs text-gray-400">Customize your Idea Diary</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preferences -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-4 overflow-hidden">
+                <div class="px-5 pt-4 pb-2">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Preferences</h4>
+                </div>
+                <div class="setting-item flex items-center justify-between px-5 py-3.5 border-b border-gray-50 cursor-pointer" onclick="toggleSetting('confirmDelete')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center">
+                            <i class="fa-solid fa-trash-can text-red-500 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Confirm before delete</p>
+                            <p class="text-[0.65rem] text-gray-400">Show confirmation dialog</p>
+                        </div>
+                    </div>
+                    <div class="toggle-switch w-11 h-6 rounded-full bg-gray-300 flex items-center px-0.5 cursor-pointer active" id="toggleConfirmDelete">
+                        <div class="toggle-dot w-5 h-5 rounded-full bg-white shadow-sm"></div>
+                    </div>
+                </div>
+                <div class="setting-item flex items-center justify-between px-5 py-3.5 border-b border-gray-50 cursor-pointer" onclick="toggleSetting('showBanner')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center">
+                            <i class="fa-solid fa-image text-indigo-500 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Show home banner</p>
+                            <p class="text-[0.65rem] text-gray-400">Display quote banner on home</p>
+                        </div>
+                    </div>
+                    <div class="toggle-switch w-11 h-6 rounded-full bg-gray-300 flex items-center px-0.5 cursor-pointer active" id="toggleShowBanner">
+                        <div class="toggle-dot w-5 h-5 rounded-full bg-white shadow-sm"></div>
+                    </div>
+                </div>
+                <div class="setting-item flex items-center justify-between px-5 py-3.5 cursor-pointer" onclick="toggleSetting('compactView')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-violet-50 flex items-center justify-center">
+                            <i class="fa-solid fa-table-cells text-violet-500 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Compact view</p>
+                            <p class="text-[0.65rem] text-gray-400">Show ideas without description</p>
+                        </div>
+                    </div>
+                    <div class="toggle-switch w-11 h-6 rounded-full bg-gray-300 flex items-center px-0.5 cursor-pointer" id="toggleCompactView">
+                        <div class="toggle-dot w-5 h-5 rounded-full bg-white shadow-sm"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Default Settings -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-4 overflow-hidden">
+                <div class="px-5 pt-4 pb-2">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Defaults</h4>
+                </div>
+                <div class="setting-item flex items-center justify-between px-5 py-3.5 border-b border-gray-50 cursor-pointer" onclick="openDefaultColorPicker()">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
+                            <i class="fa-solid fa-palette text-emerald-500 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Default card color</p>
+                            <p class="text-[0.65rem] text-gray-400">Color for new idea cards</p>
+                        </div>
+                    </div>
+                    <div class="w-7 h-7 rounded-full border-2 border-gray-200" id="defaultColorPreview" style="background:#4f46e5"></div>
+                </div>
+                <div class="setting-item flex items-center justify-between px-5 py-3.5 cursor-pointer" onclick="openDefaultCategoryPicker()">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center">
+                            <i class="fa-solid fa-tag text-amber-500 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Default category</p>
+                            <p class="text-[0.65rem] text-gray-400">Auto-select when creating ideas</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-medium text-gray-500" id="defaultCategoryLabel">None</span>
+                </div>
+            </div>
+
+            <!-- Data -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm mb-4 overflow-hidden">
+                <div class="px-5 pt-4 pb-2">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">Data Management</h4>
+                </div>
+                <div class="setting-item flex items-center justify-between px-5 py-3.5 border-b border-gray-50 cursor-pointer" onclick="exportData()">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <i class="fa-solid fa-download text-blue-500 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Export ideas</p>
+                            <p class="text-[0.65rem] text-gray-400">Download as JSON file</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+                </div>
+                <div class="setting-item flex items-center justify-between px-5 py-3.5 border-b border-gray-50 cursor-pointer" onclick="importData()">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-green-50 flex items-center justify-center">
+                            <i class="fa-solid fa-upload text-green-500 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Import ideas</p>
+                            <p class="text-[0.65rem] text-gray-400">Restore from JSON file</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-300 text-xs"></i>
+                </div>
+                <div class="setting-item flex items-center justify-between px-5 py-3.5 cursor-pointer" onclick="clearAllData()">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center">
+                            <i class="fa-solid fa-triangle-exclamation text-red-500 text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-red-600">Delete all ideas</p>
+                            <p class="text-[0.65rem] text-gray-400">This action cannot be undone</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-red-300 text-xs"></i>
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div class="px-5 pt-4 pb-2">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-wider">About</h4>
+                </div>
+                <div class="px-5 py-3.5 border-b border-gray-50 flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Version</span>
+                    <span class="text-xs font-medium text-gray-400">2.0.0</span>
+                </div>
+                <div class="px-5 py-3.5 flex items-center justify-between">
+                    <span class="text-sm text-gray-600">Storage used</span>
+                    <span class="text-xs font-medium text-gray-400" id="storageUsed">0 KB</span>
+                </div>
+            </div>
+
+            <p class="text-center text-xs text-gray-300 mt-6">Made with <i class="fa-solid fa-heart text-red-300"></i> Idea Diary</p>
+        </div>
+    </div>
+
+    <!-- FAB Button -->
+    <button onclick="openModal()" class="fab-btn fixed bottom-24 right-5 w-14 h-14 rounded-full bg-indigo-600 text-white text-2xl flex items-center justify-center z-40" id="fabBtn">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <!-- Footer Navigation -->
+    <footer class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
+        <div class="max-w-3xl mx-auto px-2 py-2 flex items-center justify-around">
+            <button onclick="switchPage('Home')" class="footer-tab active-tab flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg" id="tabHome">
+                <i class="fa-solid fa-house text-base text-indigo-600"></i>
+                <span class="text-[0.6rem] font-medium text-indigo-600">Home</span>
+            </button>
+            <button onclick="switchPage('Categories')" class="footer-tab flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg" id="tabCategories">
+                <i class="fa-solid fa-layer-group text-base text-gray-400"></i>
+                <span class="text-[0.6rem] font-medium text-gray-400">Categories</span>
+            </button>
+            <button onclick="openModal()" class="flex flex-col items-center gap-0.5 -mt-5 px-3">
+                <div class="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <i class="fa-solid fa-plus text-white text-lg"></i>
+                </div>
+                <span class="text-[0.6rem] font-medium text-indigo-600 mt-0.5">Add</span>
+            </button>
+            <button onclick="switchPage('Profile')" class="footer-tab flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg" id="tabProfile">
+                <i class="fa-solid fa-user text-base text-gray-400"></i>
+                <span class="text-[0.6rem] font-medium text-gray-400">Profile</span>
+            </button>
+            <button onclick="switchPage('Settings')" class="footer-tab flex flex-col items-center gap-0.5 py-1 px-3 rounded-lg" id="tabSettings">
+                <i class="fa-solid fa-gear text-base text-gray-400"></i>
+                <span class="text-[0.6rem] font-medium text-gray-400">Settings</span>
+            </button>
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toastContainer" class="fixed top-20 left-1/2 -translate-x-1/2 z-50"></div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="importFileInput" accept=".json" class="hidden" onchange="handleImport(event)">
+
+    <!-- =================== ADD/EDIT MODAL =================== -->
+    <div id="modal" class="hidden fixed inset-0 z-50">
+        <div class="modal-overlay absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="modal-content absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 max-h-[92vh] overflow-y-auto shadow-2xl">
+            <div class="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5"></div>
+            <h2 class="text-lg font-bold mb-5 text-center text-gray-800" id="modalTitle"><i class="fa-solid fa-plus-circle text-indigo-600 mr-1.5"></i>New Idea</h2>
+            <input type="hidden" id="editId" value="">
+
+            <label class="text-xs text-gray-500 mb-1.5 block ml-0.5 font-medium">Title <span class="text-red-400">*</span></label>
+            <input type="text" id="ideaTitleInput" placeholder="Give your idea a name..."
+                class="w-full bg-gray-50 text-gray-800 placeholder-gray-400 rounded-xl px-4 py-3 text-sm outline-none border border-gray-200 focus:border-indigo-400 focus:bg-white transition mb-4">
+
+            <label class="text-xs text-gray-500 mb-1.5 block ml-0.5 font-medium">Description / Notes</label>
+            <textarea id="ideaDescInput" placeholder="Describe your idea in detail..."
+                class="w-full bg-gray-50 text-gray-800 placeholder-gray-400 rounded-xl px-4 py-3 text-sm outline-none border border-gray-200 focus:border-indigo-400 focus:bg-white transition mb-4 resize-none"
+                rows="4"></textarea>
+
+            <label class="text-xs text-gray-500 mb-2 block ml-0.5 font-medium">Category</label>
+            <div class="flex flex-wrap gap-2 mb-5" id="categoryPicker">
+                <button onclick="selectCategory(this, 'Business')" data-cat="Business" class="cat-chip px-3 py-1.5 rounded-full bg-gray-50 text-xs text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-briefcase mr-1"></i>Business</button>
+                <button onclick="selectCategory(this, 'Creative')" data-cat="Creative" class="cat-chip px-3 py-1.5 rounded-full bg-gray-50 text-xs text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-palette mr-1"></i>Creative</button>
+                <button onclick="selectCategory(this, 'Tech')" data-cat="Tech" class="cat-chip px-3 py-1.5 rounded-full bg-gray-50 text-xs text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-code mr-1"></i>Tech</button>
+                <button onclick="selectCategory(this, 'Learning')" data-cat="Learning" class="cat-chip px-3 py-1.5 rounded-full bg-gray-50 text-xs text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-book mr-1"></i>Learning</button>
+                <button onclick="selectCategory(this, 'Personal')" data-cat="Personal" class="cat-chip px-3 py-1.5 rounded-full bg-gray-50 text-xs text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-user mr-1"></i>Personal</button>
+                <button onclick="selectCategory(this, 'Startup')" data-cat="Startup" class="cat-chip px-3 py-1.5 rounded-full bg-gray-50 text-xs text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-rocket mr-1"></i>Startup</button>
+                <button onclick="selectCategory(this, 'Finance')" data-cat="Finance" class="cat-chip px-3 py-1.5 rounded-full bg-gray-50 text-xs text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-chart-line mr-1"></i>Finance</button>
+                <button onclick="selectCategory(this, 'Health')" data-cat="Health" class="cat-chip px-3 py-1.5 rounded-full bg-gray-50 text-xs text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-heart-pulse mr-1"></i>Health</button>
+            </div>
+
+            <label class="text-xs text-gray-500 mb-2 block ml-0.5 font-medium">Card Color</label>
+            <div class="flex flex-wrap gap-2.5 mb-6" id="colorPicker">
+                <button onclick="selectColor(this, '#4f46e5')" data-color="#4f46e5" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#4f46e5"></button>
+                <button onclick="selectColor(this, '#7c3aed')" data-color="#7c3aed" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#7c3aed"></button>
+                <button onclick="selectColor(this, '#ec4899')" data-color="#ec4899" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#ec4899"></button>
+                <button onclick="selectColor(this, '#ef4444')" data-color="#ef4444" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#ef4444"></button>
+                <button onclick="selectColor(this, '#f97316')" data-color="#f97316" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#f97316"></button>
+                <button onclick="selectColor(this, '#eab308')" data-color="#eab308" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#eab308"></button>
+                <button onclick="selectColor(this, '#22c55e')" data-color="#22c55e" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#22c55e"></button>
+                <button onclick="selectColor(this, '#14b8a6')" data-color="#14b8a6" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#14b8a6"></button>
+                <button onclick="selectColor(this, '#06b6d4')" data-color="#06b6d4" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#06b6d4"></button>
+                <button onclick="selectColor(this, '#3b82f6')" data-color="#3b82f6" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#3b82f6"></button>
+                <button onclick="selectColor(this, '#6366f1')" data-color="#6366f1" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#6366f1"></button>
+                <button onclick="selectColor(this, '#64748b')" data-color="#64748b" class="color-dot w-8 h-8 rounded-full border-2 border-gray-200" style="background:#64748b"></button>
+            </div>
+
+            <button onclick="saveIdea()" class="w-full py-3.5 rounded-xl font-semibold text-sm bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-lg shadow-indigo-200 active:scale-[0.98]">
+                <i class="fa-solid fa-floppy-disk mr-1.5"></i>Save Idea
+            </button>
+            <button onclick="closeModal()" class="w-full py-3 rounded-xl font-medium text-sm text-gray-400 hover:text-gray-600 transition mt-2">Cancel</button>
+        </div>
+    </div>
+
+    <!-- =================== VIEW MODAL =================== -->
+    <div id="viewModal" class="hidden fixed inset-0 z-50">
+        <div class="modal-overlay absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeViewModal()"></div>
+        <div class="modal-content absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 max-h-[88vh] overflow-y-auto shadow-2xl">
+            <div class="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5"></div>
+            <div id="viewContent"></div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="editFromView()" class="flex-1 py-3 rounded-xl font-medium text-sm bg-indigo-600 hover:bg-indigo-700 text-white transition"><i class="fa-solid fa-pen mr-1.5"></i>Edit</button>
+                <button onclick="deleteFromView()" class="flex-1 py-3 rounded-xl font-medium text-sm bg-red-50 hover:bg-red-100 text-red-500 transition"><i class="fa-solid fa-trash mr-1.5"></i>Delete</button>
+                <button onclick="closeViewModal()" class="flex-1 py-3 rounded-xl font-medium text-sm text-gray-500 bg-gray-100 hover:bg-gray-200 transition">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =================== EDIT PROFILE MODAL =================== -->
+    <div id="profileModal" class="hidden fixed inset-0 z-50">
+        <div class="modal-overlay absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeProfileModal()"></div>
+        <div class="modal-content absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto shadow-2xl">
+            <div class="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5"></div>
+            <h2 class="text-lg font-bold mb-5 text-center text-gray-800"><i class="fa-solid fa-user-pen text-indigo-600 mr-1.5"></i>Edit Profile</h2>
+            
+            <label class="text-xs text-gray-500 mb-1.5 block ml-0.5 font-medium">Display Name</label>
+            <input type="text" id="profileNameInput" placeholder="Enter your name..."
+                class="w-full bg-gray-50 text-gray-800 placeholder-gray-400 rounded-xl px-4 py-3 text-sm outline-none border border-gray-200 focus:border-indigo-400 focus:bg-white transition mb-4">
+
+            <label class="text-xs text-gray-500 mb-1.5 block ml-0.5 font-medium">Bio</label>
+            <textarea id="profileBioInput" placeholder="Write a short bio..."
+                class="w-full bg-gray-50 text-gray-800 placeholder-gray-400 rounded-xl px-4 py-3 text-sm outline-none border border-gray-200 focus:border-indigo-400 focus:bg-white transition mb-4 resize-none"
+                rows="3"></textarea>
+
+            <label class="text-xs text-gray-500 mb-1.5 block ml-0.5 font-medium">Email (optional)</label>
+            <input type="email" id="profileEmailInput" placeholder="your@email.com"
+                class="w-full bg-gray-50 text-gray-800 placeholder-gray-400 rounded-xl px-4 py-3 text-sm outline-none border border-gray-200 focus:border-indigo-400 focus:bg-white transition mb-4">
+
+            <label class="text-xs text-gray-500 mb-2 block ml-0.5 font-medium">Avatar Icon</label>
+            <div class="flex flex-wrap gap-2.5 mb-6" id="avatarPicker">
+                <button onclick="selectAvatar(this, 'fa-solid fa-user')" data-icon="fa-solid fa-user" class="avatar-opt w-11 h-11 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-500 transition hover:bg-indigo-50"><i class="fa-solid fa-user"></i></button>
+                <button onclick="selectAvatar(this, 'fa-solid fa-user-astronaut')" data-icon="fa-solid fa-user-astronaut" class="avatar-opt w-11 h-11 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-500 transition hover:bg-indigo-50"><i class="fa-solid fa-user-astronaut"></i></button>
+                <button onclick="selectAvatar(this, 'fa-solid fa-user-ninja')" data-icon="fa-solid fa-user-ninja" class="avatar-opt w-11 h-11 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-500 transition hover:bg-indigo-50"><i class="fa-solid fa-user-ninja"></i></button>
+                <button onclick="selectAvatar(this, 'fa-solid fa-user-tie')" data-icon="fa-solid fa-user-tie" class="avatar-opt w-11 h-11 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-500 transition hover:bg-indigo-50"><i class="fa-solid fa-user-tie"></i></button>
+                <button onclick="selectAvatar(this, 'fa-solid fa-user-graduate')" data-icon="fa-solid fa-user-graduate" class="avatar-opt w-11 h-11 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-500 transition hover:bg-indigo-50"><i class="fa-solid fa-user-graduate"></i></button>
+                <button onclick="selectAvatar(this, 'fa-solid fa-user-secret')" data-icon="fa-solid fa-user-secret" class="avatar-opt w-11 h-11 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-500 transition hover:bg-indigo-50"><i class="fa-solid fa-user-secret"></i></button>
+                <button onclick="selectAvatar(this, 'fa-solid fa-rocket')" data-icon="fa-solid fa-rocket" class="avatar-opt w-11 h-11 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-500 transition hover:bg-indigo-50"><i class="fa-solid fa-rocket"></i></button>
+                <button onclick="selectAvatar(this, 'fa-solid fa-star')" data-icon="fa-solid fa-star" class="avatar-opt w-11 h-11 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-500 transition hover:bg-indigo-50"><i class="fa-solid fa-star"></i></button>
+                <button onclick="selectAvatar(this, 'fa-solid fa-lightbulb')" data-icon="fa-solid fa-lightbulb" class="avatar-opt w-11 h-11 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-500 transition hover:bg-indigo-50"><i class="fa-solid fa-lightbulb"></i></button>
+                <button onclick="selectAvatar(this, 'fa-solid fa-gem')" data-icon="fa-solid fa-gem" class="avatar-opt w-11 h-11 rounded-xl bg-gray-100 border-2 border-gray-200 flex items-center justify-center text-gray-500 transition hover:bg-indigo-50"><i class="fa-solid fa-gem"></i></button>
+            </div>
+
+            <button onclick="saveProfile()" class="w-full py-3.5 rounded-xl font-semibold text-sm bg-indigo-600 hover:bg-indigo-700 text-white transition shadow-lg shadow-indigo-200 active:scale-[0.98]">
+                <i class="fa-solid fa-check mr-1.5"></i>Save Profile
+            </button>
+            <button onclick="closeProfileModal()" class="w-full py-3 rounded-xl font-medium text-sm text-gray-400 hover:text-gray-600 transition mt-2">Cancel</button>
+        </div>
+    </div>
+
+    <!-- =================== DEFAULT COLOR PICKER MODAL =================== -->
+    <div id="defaultColorModal" class="hidden fixed inset-0 z-50">
+        <div class="modal-overlay absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeDefaultColorModal()"></div>
+        <div class="modal-content absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 shadow-2xl">
+            <div class="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5"></div>
+            <h2 class="text-lg font-bold mb-5 text-center text-gray-800"><i class="fa-solid fa-palette text-indigo-600 mr-1.5"></i>Default Color</h2>
+            <div class="flex flex-wrap gap-3 justify-center mb-6" id="defaultColorGrid">
+                <button onclick="setDefaultColor('#4f46e5')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#4f46e5"></button>
+                <button onclick="setDefaultColor('#7c3aed')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#7c3aed"></button>
+                <button onclick="setDefaultColor('#ec4899')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#ec4899"></button>
+                <button onclick="setDefaultColor('#ef4444')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#ef4444"></button>
+                <button onclick="setDefaultColor('#f97316')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#f97316"></button>
+                <button onclick="setDefaultColor('#eab308')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#eab308"></button>
+                <button onclick="setDefaultColor('#22c55e')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#22c55e"></button>
+                <button onclick="setDefaultColor('#14b8a6')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#14b8a6"></button>
+                <button onclick="setDefaultColor('#06b6d4')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#06b6d4"></button>
+                <button onclick="setDefaultColor('#3b82f6')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#3b82f6"></button>
+                <button onclick="setDefaultColor('#6366f1')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#6366f1"></button>
+                <button onclick="setDefaultColor('#64748b')" class="w-10 h-10 rounded-full border-2 border-gray-200 hover:scale-110 transition" style="background:#64748b"></button>
+            </div>
+            <button onclick="closeDefaultColorModal()" class="w-full py-3 rounded-xl font-medium text-sm text-gray-400 hover:text-gray-600 transition">Close</button>
+        </div>
+    </div>
+
+    <!-- =================== DEFAULT CATEGORY PICKER MODAL =================== -->
+    <div id="defaultCatModal" class="hidden fixed inset-0 z-50">
+        <div class="modal-overlay absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeDefaultCatModal()"></div>
+        <div class="modal-content absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 shadow-2xl">
+            <div class="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5"></div>
+            <h2 class="text-lg font-bold mb-5 text-center text-gray-800"><i class="fa-solid fa-tag text-indigo-600 mr-1.5"></i>Default Category</h2>
+            <div class="flex flex-wrap gap-2 justify-center mb-6">
+                <button onclick="setDefaultCategory('')" class="cat-chip-default px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-xmark mr-1"></i>None</button>
+                <button onclick="setDefaultCategory('Business')" class="cat-chip-default px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-briefcase mr-1"></i>Business</button>
+                <button onclick="setDefaultCategory('Creative')" class="cat-chip-default px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-palette mr-1"></i>Creative</button>
+                <button onclick="setDefaultCategory('Tech')" class="cat-chip-default px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-code mr-1"></i>Tech</button>
+                <button onclick="setDefaultCategory('Learning')" class="cat-chip-default px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-book mr-1"></i>Learning</button>
+                <button onclick="setDefaultCategory('Personal')" class="cat-chip-default px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-user mr-1"></i>Personal</button>
+                <button onclick="setDefaultCategory('Startup')" class="cat-chip-default px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-rocket mr-1"></i>Startup</button>
+                <button onclick="setDefaultCategory('Finance')" class="cat-chip-default px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-chart-line mr-1"></i>Finance</button>
+                <button onclick="setDefaultCategory('Health')" class="cat-chip-default px-4 py-2 rounded-full bg-gray-50 text-sm text-gray-600 border border-gray-200 font-medium"><i class="fa-solid fa-heart-pulse mr-1"></i>Health</button>
+            </div>
+            <button onclick="closeDefaultCatModal()" class="w-full py-3 rounded-xl font-medium text-sm text-gray-400 hover:text-gray-600 transition">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // =================== DATA & STATE ===================
+        let ideas = JSON.parse(localStorage.getItem('ideaDiary') || '[]');
+        let settings = JSON.parse(localStorage.getItem('ideaDiarySettings') || '{}');
+        let profile = JSON.parse(localStorage.getItem('ideaDiaryProfile') || '{}');
+        let selectedColor = '#4f46e5';
+        let selectedCategory = '';
+        let selectedAvatar = 'fa-solid fa-user';
+        let currentViewId = null;
+        let currentFilter = '';
+        let sortNewest = true;
+        let currentPage = 'Home';
+
+        // Initialize defaults
+        if (!settings.confirmDelete && settings.confirmDelete !== false) settings.confirmDelete = true;
+        if (!settings.showBanner && settings.showBanner !== false) settings.showBanner = true;
+        if (!settings.compactView) settings.compactView = false;
+        if (!settings.defaultColor) settings.defaultColor = '#4f46e5';
+        if (!settings.defaultCategory) settings.defaultCategory = '';
+        if (!profile.name) profile.name = 'Idea Creator';
+        if (!profile.bio) profile.bio = 'Capturing ideas, one thought at a time';
+        if (!profile.email) profile.email = '';
+        if (!profile.avatar) profile.avatar = 'fa-solid fa-user';
+        if (!profile.createdAt) { profile.createdAt = Date.now(); saveProfile_data(); }
+
+        const categoryIcons = {
+            'Business': 'fa-solid fa-briefcase',
+            'Creative': 'fa-solid fa-palette',
+            'Tech': 'fa-solid fa-code',
+            'Learning': 'fa-solid fa-book',
+            'Personal': 'fa-solid fa-user',
+            'Startup': 'fa-solid fa-rocket',
+            'Finance': 'fa-solid fa-chart-line',
+            'Health': 'fa-solid fa-heart-pulse',
+        };
+
+        const categoryColors = {
+            'Business': { bg: '#eff6ff', text: '#1d4ed8', accent: '#3b82f6' },
+            'Creative': { bg: '#fdf2f8', text: '#be185d', accent: '#ec4899' },
+            'Tech': { bg: '#f0fdf4', text: '#15803d', accent: '#22c55e' },
+            'Learning': { bg: '#fefce8', text: '#a16207', accent: '#eab308' },
+            'Personal': { bg: '#f5f3ff', text: '#6d28d9', accent: '#7c3aed' },
+            'Startup': { bg: '#fff7ed', text: '#c2410c', accent: '#f97316' },
+            'Finance': { bg: '#ecfdf5', text: '#047857', accent: '#14b8a6' },
+            'Health': { bg: '#fef2f2', text: '#b91c1c', accent: '#ef4444' },
+        };
+
+        const allCategories = ['Business', 'Creative', 'Tech', 'Learning', 'Personal', 'Startup', 'Finance', 'Health'];
+
+        const bannerQuotes = [
+            { title: "Capture Your Ideas", quote: "Every great achievement started as a simple idea. Save yours before they slip away." },
+            { title: "Think. Write. Create.", quote: "Your ideas are the seeds of innovation. Plant them here and watch them grow." },
+            { title: "Ideas Shape The Future", quote: "Today's wild idea could be tomorrow's reality. Never stop dreaming." },
+            { title: "Save Your Brilliance", quote: "A fleeting thought can change everything. Capture it now, thank yourself later." },
+            { title: "Dream It. Log It.", quote: "The best ideas come unannounced. Keep your diary ready." },
+            { title: "Innovate Every Day", quote: "Great minds collect their thoughts. Your next big break starts with a note." },
+        ];
+
+        // =================== SAVE HELPERS ===================
+        function saveData() { localStorage.setItem('ideaDiary', JSON.stringify(ideas)); }
+        function saveSettings() { localStorage.setItem('ideaDiarySettings', JSON.stringify(settings)); }
+        function saveProfile_data() { localStorage.setItem('ideaDiaryProfile', JSON.stringify(profile)); }
+
+        // =================== PAGE NAVIGATION ===================
+        function switchPage(page) {
+            currentPage = page;
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page' + page).classList.add('active');
+
+            // Update footer tabs
+            document.querySelectorAll('.footer-tab').forEach(tab => {
+                tab.classList.remove('active-tab');
+                tab.querySelector('i').classList.remove('text-indigo-600');
+                tab.querySelector('i').classList.add('text-gray-400');
+                tab.querySelector('span').classList.remove('text-indigo-600');
+                tab.querySelector('span').classList.add('text-gray-400');
+            });
+            const activeTab = document.getElementById('tab' + page);
+            if (activeTab) {
+                activeTab.classList.add('active-tab');
+                activeTab.querySelector('i').classList.remove('text-gray-400');
+                activeTab.querySelector('i').classList.add('text-indigo-600');
+                activeTab.querySelector('span').classList.remove('text-gray-400');
+                activeTab.querySelector('span').classList.add('text-indigo-600');
+            }
+
+            // Update header
+            const titles = { Home: 'Idea Diary', Categories: 'Categories', Profile: 'My Profile', Settings: 'Settings' };
+            const subs = { Home: `${ideas.length} idea${ideas.length !== 1 ? 's' : ''} saved`, Categories: `${allCategories.length} categories`, Profile: profile.name, Settings: 'Customize your app' };
+            document.getElementById('headerTitle').textContent = titles[page];
+            document.getElementById('headerSub').textContent = subs[page];
+
+            // Show/hide search & sort buttons (only on Home)
+            document.getElementById('btnSearch').style.display = page === 'Home' ? '' : 'none';
+            document.getElementById('btnSort').style.display = page === 'Home' ? '' : 'none';
+
+            // Show/hide FAB
+            document.getElementById('fabBtn').style.display = (page === 'Home' || page === 'Categories') ? '' : 'none';
+
+            // Close search if open
+            if (page !== 'Home') {
+                document.getElementById('searchBar').classList.add('hidden');
+                document.getElementById('searchInput').value = '';
+            }
+
+            // Render page content
+            if (page === 'Home') { currentFilter = ''; renderIdeas(); }
+            if (page === 'Categories') renderCategories();
+            if (page === 'Profile') renderProfile();
+            if (page === 'Settings') renderSettings();
+        }
+
+        // =================== TOAST ===================
+        function showToast(message, type = 'success') {
+            const icons = { success: 'fa-circle-check text-emerald-500', error: 'fa-circle-xmark text-red-500', info: 'fa-circle-info text-blue-500' };
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast bg-white shadow-lg border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-2.5 min-w-[250px]';
+            toast.innerHTML = `<i class="fa-solid ${icons[type]} text-lg"></i><span class="text-sm font-medium text-gray-700">${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 2600);
+        }
+
+        // =================== FORMATTERS ===================
+        function formatDate(ts) {
+            const d = new Date(ts);
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const h = d.getHours() % 12 || 12;
+            const mins = String(d.getMinutes()).padStart(2, '0');
+            const ampm = d.getHours() >= 12 ? 'PM' : 'AM';
+            return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()} at ${h}:${mins} ${ampm}`;
+        }
+
+        function formatDateShort(ts) {
+            const d = new Date(ts);
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return `${months[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+        }
+
+        function getRelativeTime(ts) {
+            const diff = Date.now() - ts;
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return 'Just now';
+            if (mins < 60) return `${mins}m ago`;
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return `${hrs}h ago`;
+            const days = Math.floor(hrs / 24);
+            if (days < 7) return `${days}d ago`;
+            return formatDateShort(ts);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // =================== STATS ===================
+        function updateStats() {
+            document.getElementById('statTotal').textContent = ideas.length;
+            const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            const thisWeek = ideas.filter(i => i.createdAt > weekAgo).length;
+            document.getElementById('statThisWeek').textContent = thisWeek;
+            const cats = new Set(ideas.filter(i => i.category).map(i => i.category));
+            document.getElementById('statCategories').textContent = cats.size;
+            document.getElementById('headerSub').textContent = `${ideas.length} idea${ideas.length !== 1 ? 's' : ''} saved`;
+        }
+
+        function updateBanner() {
+            const q = bannerQuotes[Math.floor(Math.random() * bannerQuotes.length)];
+            document.getElementById('bannerTitle').textContent = q.title;
+            document.getElementById('bannerQuote').textContent = q.quote;
+        }
+
+        // =================== HOME - RENDER IDEAS ===================
+        function renderIdeas() {
+            const container = document.getElementById('ideasContainer');
+            const empty = document.getElementById('emptyState');
+            const searchEl = document.getElementById('searchInput');
+            const search = searchEl ? searchEl.value.toLowerCase().trim() : '';
+            const compact = settings.compactView;
+
+            // Banner visibility
+            const bannerEl = document.getElementById('heroBanner');
+            if (bannerEl) {
+                const parent = bannerEl.closest('.page') || bannerEl.parentElement;
+                // Banner is inside pageHome directly
+            }
+
+            let filtered = [...ideas];
+            if (currentFilter) filtered = filtered.filter(i => i.category === currentFilter);
+            if (search) {
+                filtered = filtered.filter(i =>
+                    i.title.toLowerCase().includes(search) ||
+                    (i.description || '').toLowerCase().includes(search) ||
+                    (i.category || '').toLowerCase().includes(search)
+                );
+            }
+            if (!sortNewest) filtered = filtered.reverse();
+
+            updateStats();
+            document.getElementById('filterLabel').textContent = currentFilter || 'All';
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                empty.classList.remove('hidden');
+                if (search) {
+                    document.getElementById('emptyTitle').textContent = 'No results found';
+                    document.getElementById('emptyDesc').textContent = 'Try a different search term.';
+                } else if (currentFilter) {
+                    document.getElementById('emptyTitle').textContent = `No ${currentFilter} ideas`;
+                    document.getElementById('emptyDesc').textContent = 'Tap + to add one in this category.';
+                } else {
+                    document.getElementById('emptyTitle').textContent = 'No ideas yet';
+                    document.getElementById('emptyDesc').textContent = 'Tap the + button to capture your first brilliant idea!';
+                }
+                return;
+            }
+
+            empty.classList.add('hidden');
+
+            container.innerHTML = filtered.map((idea, idx) => {
+                const catColors = categoryColors[idea.category] || { bg: '#f3f4f6', text: '#374151', accent: '#6b7280' };
+                const icon = categoryIcons[idea.category] || 'fa-solid fa-lightbulb';
+                const desc = (idea.description || '').length > 120 ? idea.description.substring(0, 120) + '...' : (idea.description || '');
+                const borderColor = idea.color || '#4f46e5';
+                return `
+                <div class="idea-card bg-white rounded-xl p-4 mb-3 cursor-pointer relative border border-gray-100 shadow-sm"
+                     onclick="viewIdea('${idea.id}')"
+                     style="animation-delay: ${idx * 0.04}s; border-left: 4px solid ${borderColor}">
+                    <button class="delete-btn absolute top-3 right-3 w-7 h-7 rounded-full bg-gray-100 hover:bg-red-100 hover:text-red-500 flex items-center justify-center text-xs text-gray-400 transition"
+                            onclick="event.stopPropagation(); deleteIdea('${idea.id}')">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center text-sm shrink-0 mt-0.5" style="background: ${catColors.bg}; color: ${catColors.text}">
+                            <i class="${icon}"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-semibold text-sm text-gray-900 leading-tight mb-1 pr-6">${escapeHtml(idea.title)}</h3>
+                            ${!compact && desc ? `<p class="text-xs text-gray-500 leading-relaxed mb-2.5">${escapeHtml(desc)}</p>` : ''}
+                            <div class="flex items-center gap-2 flex-wrap">
+                                ${idea.category ? `<span class="text-[0.65rem] font-medium px-2 py-0.5 rounded-full" style="background:${catColors.bg}; color:${catColors.text}">${idea.category}</span>` : ''}
+                                <span class="text-[0.6rem] text-gray-400"><i class="fa-regular fa-clock mr-0.5"></i>${getRelativeTime(idea.createdAt)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // =================== CATEGORIES PAGE ===================
+        function renderCategories() {
+            const grid = document.getElementById('categoriesGrid');
+            const usedCats = new Set(ideas.filter(i => i.category).map(i => i.category));
+            document.getElementById('catTotalCats').textContent = usedCats.size;
+            document.getElementById('catTotalIdeas').textContent = ideas.length;
+
+            grid.innerHTML = allCategories.map((cat, idx) => {
+                const count = ideas.filter(i => i.category === cat).length;
+                const colors = categoryColors[cat];
+                const icon = categoryIcons[cat];
+                const lastIdea = ideas.find(i => i.category === cat);
+                const lastTime = lastIdea ? getRelativeTime(lastIdea.createdAt) : 'No ideas yet';
+                return `
+                <div class="cat-grid-card bg-white rounded-xl p-4 border border-gray-100 shadow-sm cursor-pointer" 
+                     style="animation-delay: ${idx * 0.06}s" 
+                     onclick="filterFromCategory('${cat}')">
+                    <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-3" style="background:${colors.bg}; color:${colors.text}">
+                        <i class="${icon} text-lg"></i>
+                    </div>
+                    <h4 class="text-sm font-bold text-gray-900 mb-0.5">${cat}</h4>
+                    <p class="text-[0.65rem] text-gray-400 mb-3">${lastTime}</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold" style="color:${colors.text}">${count}</span>
+                        <span class="text-[0.6rem] text-gray-400">idea${count !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="w-full bg-gray-100 rounded-full h-1.5 mt-2">
+                        <div class="h-1.5 rounded-full transition-all" style="width:${ideas.length ? Math.max(5, (count / ideas.length) * 100) : 5}%; background:${colors.accent}"></div>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function filterFromCategory(cat) {
+            currentFilter = cat;
+            switchPage('Home');
+            renderIdeas();
+            document.getElementById('filterLabel').textContent = cat;
+        }
+
+        // =================== PROFILE PAGE ===================
+        function renderProfile() {
+            document.getElementById('profileNameDisplay').textContent = profile.name;
+            document.getElementById('profileBioDisplay').textContent = profile.bio;
+            document.getElementById('profileAvatarIcon').className = profile.avatar + ' text-white text-2xl';
+
+            // Stats
+            document.getElementById('profStatTotal').textContent = ideas.length;
+            const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+            document.getElementById('profStatWeek').textContent = ideas.filter(i => i.createdAt > weekAgo).length;
+            const monthAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+            document.getElementById('profStatMonth').textContent = ideas.filter(i => i.createdAt > monthAgo).length;
+            document.getElementById('profStatCats').textContent = new Set(ideas.filter(i => i.category).map(i => i.category)).size;
+
+            // Member since
+            document.getElementById('profMemberSince').textContent = formatDateShort(profile.createdAt);
+
+            // Avg per week
+            const weeksActive = Math.max(1, Math.ceil((Date.now() - profile.createdAt) / (7 * 24 * 60 * 60 * 1000)));
+            document.getElementById('profAvgWeek').textContent = (ideas.length / weeksActive).toFixed(1);
+
+            // Most productive day
+            if (ideas.length > 0) {
+                const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                const dayCount = [0,0,0,0,0,0,0];
+                ideas.forEach(i => dayCount[new Date(i.createdAt).getDay()]++);
+                const maxDay = dayCount.indexOf(Math.max(...dayCount));
+                document.getElementById('profBestDay').textContent = days[maxDay];
+            } else {
+                document.getElementById('profBestDay').textContent = '-';
+            }
+
+            // Top Categories
+            const catCounts = {};
+            ideas.forEach(i => { if (i.category) catCounts[i.category] = (catCounts[i.category] || 0) + 1; });
+            const sorted = Object.entries(catCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const topList = document.getElementById('topCategoriesList');
+            if (sorted.length === 0) {
+                topList.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No categories used yet</p>';
+            } else {
+                topList.innerHTML = sorted.map(([cat, count], idx) => {
+                    const colors = categoryColors[cat] || { bg: '#f3f4f6', text: '#374151', accent: '#6b7280' };
+                    const icon = categoryIcons[cat] || 'fa-solid fa-tag';
+                    const pct = ideas.length ? Math.round((count / ideas.length) * 100) : 0;
+                    return `
+                    <div class="flex items-center gap-3 py-2.5 ${idx < sorted.length - 1 ? 'border-b border-gray-50' : ''}">
+                        <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background:${colors.bg}; color:${colors.text}">
+                            <i class="${icon} text-xs"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-semibold text-gray-700">${cat}</span>
+                                <span class="text-[0.6rem] text-gray-400">${count} idea${count !== 1 ? 's' : ''} (${pct}%)</span>
+                            </div>
+                            <div class="w-full bg-gray-100 rounded-full h-1.5">
+                                <div class="h-1.5 rounded-full" style="width:${pct}%; background:${colors.accent}"></div>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            }
+
+            // Recent Activity
+            const recent = [...ideas].slice(0, 5);
+            const recentEl = document.getElementById('recentActivity');
+            if (recent.length === 0) {
+                recentEl.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">No activity yet</p>';
+            } else {
+                recentEl.innerHTML = recent.map((idea, idx) => {
+                    const colors = categoryColors[idea.category] || { bg: '#f3f4f6', text: '#374151' };
+                    return `
+                    <div class="flex items-center gap-3 py-2.5 ${idx < recent.length - 1 ? 'border-b border-gray-50' : ''}">
+                        <div class="w-2 h-2 rounded-full shrink-0" style="background:${idea.color || '#4f46e5'}"></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs font-medium text-gray-700 truncate">${escapeHtml(idea.title)}</p>
+                        </div>
+                        <span class="text-[0.6rem] text-gray-400 shrink-0">${getRelativeTime(idea.createdAt)}</span>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        function openEditProfile() {
+            document.getElementById('profileNameInput').value = profile.name;
+            document.getElementById('profileBioInput').value = profile.bio;
+            document.getElementById('profileEmailInput').value = profile.email;
+            selectedAvatar = profile.avatar;
+            document.querySelectorAll('.avatar-opt').forEach(b => {
+                b.classList.remove('border-indigo-500', 'bg-indigo-50', 'text-indigo-600');
+                b.classList.add('border-gray-200', 'bg-gray-100', 'text-gray-500');
+                if (b.dataset.icon === selectedAvatar) {
+                    b.classList.add('border-indigo-500', 'bg-indigo-50', 'text-indigo-600');
+                    b.classList.remove('border-gray-200', 'bg-gray-100', 'text-gray-500');
+                }
+            });
+            document.getElementById('profileModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function selectAvatar(btn, icon) {
+            document.querySelectorAll('.avatar-opt').forEach(b => {
+                b.classList.remove('border-indigo-500', 'bg-indigo-50', 'text-indigo-600');
+                b.classList.add('border-gray-200', 'bg-gray-100', 'text-gray-500');
+            });
+            btn.classList.add('border-indigo-500', 'bg-indigo-50', 'text-indigo-600');
+            btn.classList.remove('border-gray-200', 'bg-gray-100', 'text-gray-500');
+            selectedAvatar = icon;
+        }
+
+        function changeAvatar() { openEditProfile(); }
+
+        function saveProfile() {
+            const name = document.getElementById('profileNameInput').value.trim();
+            if (!name) { showToast('Please enter a name', 'error'); return; }
+            profile.name = name;
+            profile.bio = document.getElementById('profileBioInput').value.trim() || 'Capturing ideas, one thought at a time';
+            profile.email = document.getElementById('profileEmailInput').value.trim();
+            profile.avatar = selectedAvatar;
+            saveProfile_data();
+            closeProfileModal();
+            renderProfile();
+            showToast('Profile updated successfully');
+        }
+
+        // =================== SETTINGS PAGE ===================
+        function renderSettings() {
+            // Update toggles
+            const toggleMap = {
+                'toggleConfirmDelete': settings.confirmDelete,
+                'toggleShowBanner': settings.showBanner,
+                'toggleCompactView': settings.compactView,
+            };
+            Object.entries(toggleMap).forEach(([id, val]) => {
+                const el = document.getElementById(id);
+                if (val) { el.classList.add('active'); } else { el.classList.remove('active'); }
+            });
+
+            document.getElementById('defaultColorPreview').style.background = settings.defaultColor;
+            document.getElementById('defaultCategoryLabel').textContent = settings.defaultCategory || 'None';
+
+            // Storage
+            const bytes = new Blob([JSON.stringify(ideas) + JSON.stringify(settings) + JSON.stringify(profile)]).size;
+            const kb = (bytes / 1024).toFixed(1);
+            document.getElementById('storageUsed').textContent = kb + ' KB';
+        }
+
+        function toggleSetting(key) {
+            settings[key] = !settings[key];
+            saveSettings();
+            renderSettings();
+
+            // Apply banner setting immediately
+            if (key === 'showBanner') {
+                const banner = document.querySelector('#pageHome > .bg-white.border-b');
+                if (banner) banner.style.display = settings.showBanner ? '' : 'none';
+            }
+
+            if (key === 'compactView' && currentPage === 'Home') renderIdeas();
+
+            showToast('Setting updated');
+        }
+
+        function openDefaultColorPicker() {
+            document.getElementById('defaultColorModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeDefaultColorModal() {
+            document.getElementById('defaultColorModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        function setDefaultColor(color) {
+            settings.defaultColor = color;
+            saveSettings();
+            renderSettings();
+            closeDefaultColorModal();
+            showToast('Default color updated');
+        }
+
+        function openDefaultCategoryPicker() {
+            document.getElementById('defaultCatModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeDefaultCatModal() {
+            document.getElementById('defaultCatModal').classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        function setDefaultCategory(cat) {
+            settings.defaultCategory = cat;
+            saveSettings();
+            renderSettings();
+            closeDefaultCatModal();
+            showToast('Default category updated');
+        }
+
+        function exportData() {
+            const data = { ideas, settings, profile, exportedAt: new Date().toISOString() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `idea-diary-backup-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Ideas exported successfully');
+        }
+
+        function importData() {
+            document.getElementById('importFileInput').click();
+        }
+
+        function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.ideas && Array.isArray(data.ideas)) {
+                        ideas = data.ideas;
+                        saveData();
+                        if (data.settings) { Object.assign(settings, data.settings); saveSettings(); }
+                        if (data.profile) { Object.assign(profile, data.profile); saveProfile_data(); }
+                        showToast(`Imported ${ideas.length} ideas`);
+                        renderIdeas();
+                        renderSettings();
+                    } else {
+                        showToast('Invalid file format', 'error');
+                    }
+                } catch (err) {
+                    showToast('Error reading file', 'error');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to delete ALL ideas? This cannot be undone!')) {
+                if (confirm('This will permanently remove all your ideas. Continue?')) {
+                    ideas = [];
+                    saveData();
+                    renderIdeas();
+                    renderSettings();
+                    showToast('All ideas deleted', 'info');
+                }
+            }
+        }
+
+        // =================== IDEA CRUD ===================
+        function openModal(editId = null) {
+            document.getElementById('modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            resetModal();
+
+            if (editId) {
+                const idea = ideas.find(i => i.id === editId);
+                if (idea) {
+                    document.getElementById('editId').value = idea.id;
+                    document.getElementById('ideaTitleInput').value = idea.title;
+                    document.getElementById('ideaDescInput').value = idea.description || '';
+                    document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-pen-to-square text-indigo-600 mr-1.5"></i>Edit Idea';
+                    selectedColor = idea.color || '#4f46e5';
+                    selectedCategory = idea.category || '';
+
+                    document.querySelectorAll('.color-dot').forEach(btn => {
+                        if (btn.dataset.color === selectedColor) { btn.classList.add('active'); btn.style.borderColor = selectedColor; }
+                    });
+                    document.querySelectorAll('#categoryPicker .cat-chip').forEach(btn => {
+                        if (btn.dataset.cat === selectedCategory) btn.classList.add('active');
+                    });
+                }
+            }
+            setTimeout(() => document.getElementById('ideaTitleInput').focus(), 300);
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.body.style.overflow = '';
+            resetModal();
+        }
+
+        function resetModal() {
+            document.getElementById('editId').value = '';
+            document.getElementById('ideaTitleInput').value = '';
+            document.getElementById('ideaDescInput').value = '';
+            document.getElementById('modalTitle').innerHTML = '<i class="fa-solid fa-plus-circle text-indigo-600 mr-1.5"></i>New Idea';
+            selectedColor = settings.defaultColor || '#4f46e5';
+            selectedCategory = settings.defaultCategory || '';
+            document.querySelectorAll('.color-dot').forEach(b => { b.classList.remove('active'); b.style.borderColor = '#e5e7eb'; });
+            document.querySelectorAll('#categoryPicker .cat-chip').forEach(b => b.classList.remove('active'));
+
+            // Apply defaults
+            document.querySelectorAll('.color-dot').forEach(btn => {
+                if (btn.dataset.color === selectedColor) { btn.classList.add('active'); btn.style.borderColor = selectedColor; }
+            });
+            if (selectedCategory) {
+                document.querySelectorAll('#categoryPicker .cat-chip').forEach(btn => {
+                    if (btn.dataset.cat === selectedCategory) btn.classList.add('active');
+                });
+            }
+        }
+
+        function selectColor(btn, color) {
+            document.querySelectorAll('.color-dot').forEach(b => { b.classList.remove('active'); b.style.borderColor = '#e5e7eb'; });
+            btn.classList.add('active'); btn.style.borderColor = color;
+            selectedColor = color;
+        }
+
+        function selectCategory(btn, cat) {
+            document.querySelectorAll('#categoryPicker .cat-chip').forEach(b => b.classList.remove('active'));
+            if (selectedCategory === cat) { selectedCategory = ''; } else { btn.classList.add('active'); selectedCategory = cat; }
+        }
+
+        function saveIdea() {
+            const title = document.getElementById('ideaTitleInput').value.trim();
+            const desc = document.getElementById('ideaDescInput').value.trim();
+            const editId = document.getElementById('editId').value;
+
+            if (!title) {
+                const inp = document.getElementById('ideaTitleInput');
+                inp.style.borderColor = '#ef4444'; inp.placeholder = 'Please enter a title...';
+                setTimeout(() => { inp.style.borderColor = '#e5e7eb'; inp.placeholder = 'Give your idea a name...'; }, 2000);
+                return;
+            }
+
+            if (editId) {
+                const idx = ideas.findIndex(i => i.id === editId);
+                if (idx !== -1) {
+                    ideas[idx].title = title; ideas[idx].description = desc;
+                    ideas[idx].color = selectedColor; ideas[idx].category = selectedCategory;
+                    ideas[idx].updatedAt = Date.now();
+                }
+                showToast('Idea updated');
+            } else {
+                ideas.unshift({
+                    id: 'idea_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                    title, description: desc, color: selectedColor, category: selectedCategory,
+                    createdAt: Date.now(), updatedAt: Date.now()
+                });
+                showToast('Idea saved');
+            }
+
+            saveData(); closeModal(); renderIdeas();
+        }
+
+        function deleteIdea(id) {
+            if (settings.confirmDelete) {
+                if (!confirm('Delete this idea permanently?')) return;
+            }
+            ideas = ideas.filter(i => i.id !== id);
+            saveData(); renderIdeas();
+            showToast('Idea deleted', 'info');
+        }
+
+        function viewIdea(id) {
+            const idea = ideas.find(i => i.id === id);
+            if (!idea) return;
+            currentViewId = id;
+            const catColors = categoryColors[idea.category] || { bg: '#f3f4f6', text: '#374151' };
+            const icon = categoryIcons[idea.category] || 'fa-solid fa-lightbulb';
+            const borderColor = idea.color || '#4f46e5';
+
+            document.getElementById('viewContent').innerHTML = `
+                <div class="rounded-xl p-5 mb-4 border" style="background: ${catColors.bg}; border-color: ${borderColor}30">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center text-lg" style="background: white; color: ${borderColor}">
+                            <i class="${icon}"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h2 class="font-bold text-lg text-gray-900 leading-tight">${escapeHtml(idea.title)}</h2>
+                            ${idea.category ? `<span class="text-xs font-medium px-2.5 py-0.5 rounded-full inline-block mt-1" style="background:white; color:${catColors.text}">${idea.category}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+                ${idea.description ? `
+                <div class="bg-gray-50 rounded-xl p-4 mb-4 border border-gray-100">
+                    <h4 class="text-xs text-gray-500 mb-2 font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-file-lines text-indigo-500"></i> Notes & Details
+                    </h4>
+                    <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">${escapeHtml(idea.description)}</p>
+                </div>` : ''}
+                <div class="flex flex-col gap-1.5 text-xs text-gray-400 px-1">
+                    <span><i class="fa-regular fa-calendar mr-1.5"></i>Created: ${formatDate(idea.createdAt)}</span>
+                    ${idea.updatedAt !== idea.createdAt ? `<span><i class="fa-solid fa-pen-fancy mr-1.5"></i>Edited: ${formatDate(idea.updatedAt)}</span>` : ''}
+                </div>`;
+
+            document.getElementById('viewModal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeViewModal() {
+            document.getElementById('viewModal').classList.add('hidden');
+            document.body.style.overflow = '';
+            currentViewId = null;
+        }
+
+        function editFromView() {
+            const id = currentViewId;
+            closeViewModal();
+            setTimeout(() => openModal(id), 200);
+        }
+
+        function deleteFromView() {
+            const id = currentViewId;
+            if (settings.confirmDelete) {
+                if (!confirm('Delete this idea permanently?')) return;
+            }
+            ideas = ideas.filter(i => i.id !== id);
+            saveData(); closeViewModal(); renderIdeas();
+            showToast('Idea deleted', 'info');
+        }
+
+        function toggleSearch() {
+            const bar = document.getElementById('searchBar');
+            bar.classList.toggle('hidden');
+            if (!bar.classList.contains('hidden')) {
+                document.getElementById('searchInput').focus();
+            } else {
+                document.getElementById('searchInput').value = '';
+                renderIdeas();
+            }
+        }
+
+        function toggleSort() {
+            sortNewest = !sortNewest;
+            renderIdeas();
+            showToast(sortNewest ? 'Newest first' : 'Oldest first', 'info');
+        }
+
+        // =================== INITIALIZE ===================
+        updateBanner();
+        renderIdeas();
+
+        // Apply banner setting on load
+        if (!settings.showBanner) {
+            const banner = document.querySelector('#pageHome > .bg-white.border-b');
+            if (banner) banner.style.display = 'none';
+        }
+
+        // Apply saved profile
+        document.getElementById('profileAvatarIcon').className = profile.avatar + ' text-white text-2xl';
+    </script>
+</body>
+</html>
